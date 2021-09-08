@@ -20,15 +20,20 @@ const userSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  email_verification_code: String,
+  verification_code: String,
   is_logged_in: {
     type: Boolean,
     default: false,
   },
+  phone:{
+    type: String,
+    required: true
+  }
 });
 
 // Hashing the password
 userSchema.pre("save", async function (next) {
+  //Logical error (Gets executed everytime irrespective of the password being save or not)
   try {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(this.password, salt);

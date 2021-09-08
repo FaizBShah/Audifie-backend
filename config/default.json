@@ -1,0 +1,10 @@
+{
+    "aws_ses": {
+        "host": "email-smtp.ap-south-1.amazonaws.com",
+        "port": 587,
+        "smtp_user": "bbbbb",
+        "smtp_password": "xxxxxxxx",
+        "from_name": "Satabrata Paul",
+        "from_email": "paul@audifie.com" 
+    }
+}
