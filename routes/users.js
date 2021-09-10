@@ -7,6 +7,7 @@ const Users = require("../model/user");
 const HTTPError = require("../errorMessage");
 const config = require("../config/default.json");
 const user = require("../model/user");
+const awsUtils=require("../aws/awsUtils");
 
 //Email sending configurations
 const smtpConfig = {
@@ -37,7 +38,7 @@ new Promise((resolve, reject) => {
   });
  };
 
-
+ 
 //Function for generating random number for verification code
 const generateRandomNumber = (length) => {
   const arr = [];
@@ -48,10 +49,6 @@ const generateRandomNumber = (length) => {
   }
   return arr.join("");
 };
-
-
-//Code for sending sms (otp sending)
-//{need to be coded}
 
 
 /**
@@ -71,10 +68,10 @@ router.route("/signup").post(async (req, res) => {
   try {
     if (!req.body) throw new HTTPError(400, "Post data invalid");
 
-    const email = req.body.email;
+    let email = req.body.email;
     const name = req.body.name;
     const password = req.body.password;
-    //const phone=req.body.phone;
+    const phone=req.body.phone;
 
     if (!email) throw new HTTPError(400, "Email not found");
 
@@ -99,14 +96,15 @@ router.route("/signup").post(async (req, res) => {
       email,
       name,
       password,
-      is_logged_in: false,
       email_confirmed: false,
       verification_code,
+      is_logged_in: false,
+      phone
     });
 
     newUser.save(() => {
-      res.status(200).json({ status: "ok" });
-
+      res.status(200).json({ status: "user saved" });
+      
       // email message 
       const mailOptions = {
       from: `"${config.aws_ses.from_name}" <${config.aws_ses.from_email}>`,
@@ -114,8 +112,12 @@ router.route("/signup").post(async (req, res) => {
       subject: "Email Verification Code",
       text: `Your Email Verification Code is : ${verification_code}`,
       };
-
       sendMail(mailOptions);
+
+      //sending sms to mobile phone
+      const message=`Hello from Audifie !!! Your Email Verification Code is ${verification_code}`;
+      awsUtils.sendSMS(phone,message);
+
     });
   } catch (err) {
     return res.status(err.statusCode || 400).json({ status: "error", message: err.message });
@@ -139,14 +141,14 @@ router.route("/mail/verify").post(async (req,res) => {
   try{
     if(!req.body) throw new HTTPError(400, "Request body empty");
     let email=req.body.email;
-    const code=req.body.code;
+    let code=req.body.code;
 
     if (!email) throw new HTTPError(400, "Email not found");
     email=email.toLowerCase();
 
     if(!code) throw new HTTPError(400, "Verification code not provided");
 
-    user = await Users.findOne({email});
+    const user = await Users.findOne({email});
 
     if(user.email_confirmed==true) throw new HTTPError(400, "Email already verfified");
     else{
@@ -154,7 +156,7 @@ router.route("/mail/verify").post(async (req,res) => {
       user.email_confirmed=true;
       user.verification_code="";
       user.save(() => {
-        res.send(200).json({status: "Email Verified"});
+        res.status(200).json({status: "Email Verified"});
       });
     }
     else{
@@ -194,7 +196,7 @@ router.route('/forgetpass/request').post(async (req,res) => {
       user.verification_code=forget_pass_code;
 
       user.save(() => {
-        res.send(200).json({status: "Forget password code generated"});
+        res.status(200).json({status: "Forget password code generated"});
 
         // email message 
         const mailOptions = {
@@ -203,8 +205,11 @@ router.route('/forgetpass/request').post(async (req,res) => {
         subject: "Forget Password Request Code",
         text: `Your Forget Password Request Verification Code is : ${forget_pass_code}`,
         };
-  
         sendMail(mailOptions);
+
+        //sending sms to mobile phone
+        const message=`Your Forget Password Request Verification Code is ${verification_code}`;
+        awsUtils.sendSMS(phone,message);
 
       });
     }
