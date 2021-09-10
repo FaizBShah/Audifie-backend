@@ -7,9 +7,10 @@
     "dev": "nodemon ./bin/www"
   },
   "dependencies": {
+    "aws-sdk": "^2.986.0",
     "bcrypt": "^5.0.1",
     "cookie-parser": "~1.4.4",
-    "debug": "~2.6.9",
+    "debug": "^2.6.9",
     "dotenv": "^10.0.0",
     "express": "~4.16.1",
     "mongoose": "^5.13.2",

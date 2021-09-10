@@ -1,4 +1,9 @@
 {
+    "aws-credentials":{
+        "accessKeyId": "AKIAQTIMDXKU6HNZED7Z",
+        "secretAccessKey": "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",
+        "region": "ap-south-1"
+    },
     "aws_ses": {
         "host": "email-smtp.ap-south-1.amazonaws.com",
         "port": 587,
@@ -6,5 +11,8 @@
         "smtp_password": "xxxxxxxx",
         "from_name": "Satabrata Paul",
         "from_email": "paul@audifie.com" 
+    },
+    "aws_sns": {
+        "region": "ap-south-1"
     }
 }
