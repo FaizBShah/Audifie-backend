@@ -1,13 +1,12 @@
 var express = require("express");
 var router = express.Router();
 
+const jwt = require("jwt-simple");
 const nodemailer = require("nodemailer");
 
 const Users = require("../model/user");
 const HTTPError = require("../errorMessage");
 const config = require("../config/default.json");
-const user = require("../model/user");
-
 //Email sending configurations
 const smtpConfig = {
    host: config.aws_ses.host,
@@ -71,7 +70,7 @@ router.route("/signup").post(async (req, res) => {
   try {
     if (!req.body) throw new HTTPError(400, "Post data invalid");
 
-    const email = req.body.email;
+    let email = req.body.email;
     const name = req.body.name;
     const password = req.body.password;
     //const phone=req.body.phone;
@@ -105,7 +104,8 @@ router.route("/signup").post(async (req, res) => {
     });
 
     newUser.save(() => {
-      res.status(200).json({ status: "ok" });
+      const token = jwt.encode(newUser, config.Server.secret);
+      res.status(200).json({ status: "ok", token: `JWT ${token}` });
 
       // email message 
       const mailOptions = {
@@ -146,7 +146,7 @@ router.route("/mail/verify").post(async (req,res) => {
 
     if(!code) throw new HTTPError(400, "Verification code not provided");
 
-    user = await Users.findOne({email});
+    const user = await Users.findOne({email});
 
     if(user.email_confirmed==true) throw new HTTPError(400, "Email already verfified");
     else{
@@ -179,7 +179,7 @@ router.route("/mail/verify").post(async (req,res) => {
 
 router.route('/forgetpass/request').post(async (req,res) => {
   try{
-    const email=req.body.email;
+    let email=req.body.email;
 
     if(!email) throw new HTTPError(400, "Request Body Empty");
 
@@ -240,7 +240,7 @@ router.route("/login").post(async (req, res) => {
     if (!req.body) throw new HTTPError(400, "Request body empty");
     let email = req.body.email;
     const password = req.body.password;
-    const ip = req.headers["x-forwarded-for"];
+    // const ip = req.headers["x-forwarded-for"];
 
     if (!email) throw new HTTPError(400, "Email not found");
     email = email.toLowerCase();
@@ -257,8 +257,9 @@ router.route("/login").post(async (req, res) => {
       user.comparePassword(req.body.password, (err, isMatch) => {
         if (isMatch && !err) {
           user.is_logged_in = true;
+          const token = jwt.encode(user, config.Server.secret);
           user.save(() => {
-            res.status(200).json({ status: "logged in" });
+            res.status(200).json({ status: "logged in", token: `JWT ${token}` });
           });
         } else {
           res.status(400).send({ status: "error", message: "Sign In failed" });

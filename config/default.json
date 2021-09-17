@@ -6,5 +6,9 @@
         "smtp_password": "xxxxxxxx",
         "from_name": "Satabrata Paul",
         "from_email": "paul@audifie.com" 
+    },
+    "Server": {
+        "port": "5000",
+        "secret" : "gf8ewr8g"
     }
 }
