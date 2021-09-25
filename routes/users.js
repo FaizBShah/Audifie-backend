@@ -1,12 +1,13 @@
 var express = require("express");
 var router = express.Router();
-
 const jwt = require("jwt-simple");
 const nodemailer = require("nodemailer");
-
+const request = require("request");
 const Users = require("../model/user");
 const HTTPError = require("../errorMessage");
 const config = require("../config/default.json");
+
+
 //Email sending configurations
 const smtpConfig = {
    host: config.aws_ses.host,
@@ -268,6 +269,122 @@ router.route("/login").post(async (req, res) => {
     }
   } catch (err) {
     return res.status(err.statusCode || 400).json({ status: "error", message: err.message });
+  }
+});
+
+
+/**
+ * @api {post} /users/googlesignup/ signup through Google
+ * @apiName google_signup_request
+ *
+ * @apiParam {String} Google Access Token of the user.
+ *
+ * @apiSuccess {String} status response status string.
+ * @apiSuccess {Object} user signed up status.
+ */
+
+ router.route("/googlesignup").post(async (req,res) => {
+  try{
+    const google_token = req.body.google_token;
+    if(!google_token) throw new HTTPError(400,"Access Code is Missing");
+ 
+    const config={}
+ 
+    config.url="https://graph.google.com/me";
+    config.headers={};
+    config.headers.Authorization=`OAuth ${google_token}`
+ 
+    request(config, async (err,response,body)=>{
+      if(err){
+        return res.status(400).json({status: "Error", message: "Google token missing"})
+      }
+      else{
+        const data = JSON.parse(body)
+        console.log(data)
+        console.log(Users)
+        const userObj = await Users.findOne({email: data.email, "profile_id": data.id});
+
+        if (userObj) {
+          return res.status(400).json({status: "Error", message: "User already exists"});
+        }
+
+        const { email, name } = data;
+        const password = generateRandomNumber(14);
+        
+        const newUser = new Users({
+          email,
+          name,
+          password,
+          is_logged_in: false,
+          email_confirmed: true
+        });
+
+        newUser.save(() => {
+          res.status(200).json({ status: "ok", message: 'User signed up' });
+        });
+      }
+    })
+  }
+  catch(err){
+    return res.status(err.statusCode || 400).json({status: "error",message: err.message});
+  }
+});
+
+
+/**
+ * @api {post} /users/fbsignup/ signup through FB
+ * @apiName fb_signup_request
+ *
+ * @apiParam {String} FB Access Token of the user.
+ *
+ * @apiSuccess {String} status response status string.
+ * @apiSuccess {Object} user signed up status.
+ */
+
+router.route("/fbsignup").post(async (req,res) => {
+  try{
+    const fb_token = req.body.fb_token;
+    if(!fb_token) throw new HTTPError(400,"Access Code is Missing");
+ 
+    const config={}
+ 
+    config.url="https://graph.facebook.com/me";
+    config.headers={};
+    config.headers.Authorization=`OAuth ${fb_token}`
+ 
+    request(config, async (err,response,body)=>{
+      if(err){
+        return res.status(400).json({status: "Error", message: "fb token missing"})
+      }
+      else{
+        const data = JSON.parse(body)
+        console.log(data)
+        console.log(Users)
+        const userObj = await Users.findOne({email: data.email, "profile_id": data.id});
+
+        if (userObj) {
+          return res.status(400).json({status: "Error", message: "User already exists"});
+        }
+
+        const { email, name } = data;
+        const password = generateRandomNumber(14);
+        
+        const newUser = new Users({
+          email,
+          name,
+          password,
+          is_logged_in: false,
+          email_confirmed: true
+        });
+
+        newUser.save(() => {
+          res.status(200).json({ status: "ok", message: 'User signed up' });
+        });
+      }
+    })
+  }
+  catch(err){
+    return res.status(err.statusCode || 400).json({status: "error",message: err.message});
   }
 });
 
