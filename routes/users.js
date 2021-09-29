@@ -5,7 +5,7 @@ const nodemailer = require("nodemailer");
 const request = require("request");
 const Users = require("../model/user");
 const HTTPError = require("../errorMessage");
-const config = require("../config/default.json");
+const config = require("../config/default");
 
 
 //Email sending configurations
