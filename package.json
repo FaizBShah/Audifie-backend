@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.985.0",
+    "axios": "^0.21.4",
     "bcrypt": "^5.0.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
@@ -16,8 +17,7 @@
     "jwt-simple": "^0.5.6",
     "mongoose": "^5.13.2",
     "morgan": "~1.9.1",
-    "nodemailer": "^6.6.3",
-    "request": "^2.88.2"
+    "nodemailer": "^6.6.3"
   },
   "devDependencies": {
     "eslint": "^7.32.0",

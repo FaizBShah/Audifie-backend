@@ -2,7 +2,8 @@ var express = require("express");
 var router = express.Router();
 const jwt = require("jwt-simple");
 const nodemailer = require("nodemailer");
-const request = require("request");
+const axios = require("axios");
+const bcrypt = require("bcrypt");
 const Users = require("../model/user");
 const HTTPError = require("../errorMessage");
 const config = require("../config/default");
@@ -91,7 +92,9 @@ router.route("/signup").post(async (req, res) => {
 
     if (!name) throw new HTTPError(400, "Name is required while sign up");
 
-    email=email.toLowerCase();
+    const user = await Users.findOne({ email });
+
+    if (user) throw new HTTPError(400, "User already exists");
 
     const verification_code = generateRandomNumber(6);
 
@@ -104,22 +107,32 @@ router.route("/signup").post(async (req, res) => {
       verification_code,
     });
 
-    newUser.save(() => {
-      const token = jwt.encode(newUser, config.Server.secret);
-      res.status(200).json({ status: "ok", token: `JWT ${token}` });
+    bcrypt.genSalt(10, (err, salt) => {
+      if (err) throw new HTTPError(400, "Login Failed");
 
-      // email message 
-      const mailOptions = {
-      from: `"${config.aws_ses.from_name}" <${config.aws_ses.from_email}>`,
-      to: newUser.email,
-      subject: "Email Verification Code",
-      text: `Your Email Verification Code is : ${verification_code}`,
-      };
+      bcrypt.hash(newUser.password, salt, (err, hash) => {
+        if (err) throw new HTTPError(400, "Login Failed");
+        
+        newUser.password = hash;
+        newUser.save()
+          .then((newUser) => {
+            res.status(200).json({ status: "ok" });
 
-      sendMail(mailOptions);
+            // email message 
+            const mailOptions = {
+              from: `"${config.aws_ses.from_name}" <${config.aws_ses.from_email}>`,
+              to: newUser.email,
+              subject: "Email Verification Code",
+              text: `Your Email Verification Code is : ${verification_code}`,
+            };
+
+            sendMail(mailOptions);
+          })
+          .catch((err) => res.status(err.statusCode || 400).json({ status: "error", message: err.message || "Login Failed" }));
+      });
     });
   } catch (err) {
-    return res.status(err.statusCode || 400).json({ status: "error", message: err.message });
+    return res.status(err.statusCode || 400).json({ status: "error", message: err.message || "Login Failed" });
   }
 });
 
@@ -285,48 +298,65 @@ router.route("/login").post(async (req, res) => {
 
  router.route("/googlesignup").post(async (req,res) => {
   try{
-    const google_token = req.body.google_token;
-    if(!google_token) throw new HTTPError(400,"Access Code is Missing");
+    const google_code = req.body.google_code;
+    if(!google_code) throw new HTTPError(400,"Access Code is Missing");
  
-    const config={}
- 
-    config.url="https://graph.google.com/me";
-    config.headers={};
-    config.headers.Authorization=`OAuth ${google_token}`
- 
-    request(config, async (err,response,body)=>{
-      if(err){
-        return res.status(400).json({status: "Error", message: "Google token missing"})
-      }
-      else{
-        const data = JSON.parse(body)
-        console.log(data)
-        console.log(Users)
-        const userObj = await Users.findOne({email: data.email, "profile_id": data.id});
+    const { data: { access_token, expires_in } } = await axios({
+      url: `https://oauth2.googleapis.com/token`,
+      method: 'post',
+      data: {
+        client_id: config.google.app_id,
+        client_secret: config.google.app_secret,
+        redirect_uri: 'https://www.example.com/authenticate/google',
+        grant_type: 'authorization_code',
+        google_code,
+      },
+    });
 
-        if (userObj) {
-          return res.status(400).json({status: "Error", message: "User already exists"});
-        }
+    const { data: { email, given_name, family_name } } = await axios({
+      url: 'https://www.googleapis.com/oauth2/v2/userinfo',
+      method: 'get',
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
 
-        const { email, name } = data;
-        const password = generateRandomNumber(14);
-        
-        const newUser = new Users({
-          email,
-          name,
-          password,
-          is_logged_in: false,
-          email_confirmed: true
+    const user = await Users.findOne({ email });
+
+    if (!user) {
+      const newUser = new Users({
+        email,
+        name: given_name + " " + family_name,
+        password: generateRandomNumber(14),
+        is_logged_in: false,
+        email_confirmed: true,
+      });
+  
+      bcrypt.genSalt(10, (err, salt) => {
+        if (err) throw new HTTPError(400, "Login Failed");
+  
+        bcrypt.hash(newUser.password, salt, (err, hash) => {
+          if (err) throw new HTTPError(400, "Login Failed");
+          
+          newUser.password = hash;
+          newUser.save()
+            .then((user) => {
+              user.expires_in = expires_in;
+              const token = jwt.encode(user, config.Server.secret);
+              res.status(200).json({ status: "ok", token: `JWT ${token}`, auth: 'Google' });
+            })
+            .catch((err) => res.status(err.statusCode || 400).json({ status: "error", message: err.message || "Login Failed" }));
         });
-
-        newUser.save(() => {
-          res.status(200).json({ status: "ok", message: 'User signed up' });
-        });
-      }
-    })
+      });
+    }
+    else {
+      user.expires_in = expires_in;
+      const token = jwt.encode(user, config.Server.secret);
+      res.status(200).json({ status: "ok", token: `JWT ${token}`, auth: 'Google' });
+    }
   }
   catch(err){
-    return res.status(err.statusCode || 400).json({status: "error",message: err.message});
+    return res.status(err.statusCode || 400).json({status: "error", message: err.message || "Login Failed" });
   }
 });
 
@@ -343,48 +373,65 @@ router.route("/login").post(async (req, res) => {
 
 router.route("/fbsignup").post(async (req,res) => {
   try{
-    const fb_token = req.body.fb_token;
-    if(!fb_token) throw new HTTPError(400,"Access Code is Missing");
+    const fb_code = req.body.fb_code;
+    if(!fb_code) throw new HTTPError(400,"Access Code is Missing");
  
-    const config={}
- 
-    config.url="https://graph.facebook.com/me";
-    config.headers={};
-    config.headers.Authorization=`OAuth ${fb_token}`
- 
-    request(config, async (err,response,body)=>{
-      if(err){
-        return res.status(400).json({status: "Error", message: "fb token missing"})
-      }
-      else{
-        const data = JSON.parse(body)
-        console.log(data)
-        console.log(Users)
-        const userObj = await Users.findOne({email: data.email, "profile_id": data.id});
+    const { data: { access_token, expires_in } } = await axios({
+      url: 'https://graph.facebook.com/v4.0/oauth/access_token',
+      method: 'get',
+      params: {
+        client_id: config.facebook.app_id,
+        client_secret: config.facebook.app_secret,
+        redirect_uri: 'https://www.example.com/authenticate/facebook/',
+        fb_code,
+      },
+    });
 
-        if (userObj) {
-          return res.status(400).json({status: "Error", message: "User already exists"});
-        }
+    const { data: { email, first_name, last_name } } = await axios({
+      url: 'https://graph.facebook.com/me',
+      method: 'get',
+      params: {
+        fields: ['id', 'email', 'first_name', 'last_name'].join(','),
+        access_token: access_token,
+      },
+    });
 
-        const { email, name } = data;
-        const password = generateRandomNumber(14);
-        
-        const newUser = new Users({
-          email,
-          name,
-          password,
-          is_logged_in: false,
-          email_confirmed: true
+    const user = await Users.findOne({ email });
+
+    if (!user) {
+      const newUser = new Users({
+        email,
+        name: first_name + " " + last_name,
+        password: generateRandomNumber(14),
+        is_logged_in: false,
+        email_confirmed: true,
+      });
+  
+      bcrypt.genSalt(10, (err, salt) => {
+        if (err) throw new HTTPError(400, "Login Failed");
+  
+        bcrypt.hash(newUser.password, salt, (err, hash) => {
+          if (err) throw new HTTPError(400, "Login Failed");
+          
+          newUser.password = hash;
+          newUser.save()
+            .then((user) => {
+              user.expires_in = expires_in;
+              const token = jwt.encode(user, config.Server.secret);
+              res.status(200).json({ status: "ok", token: `JWT ${token}`, auth: 'Facebook' });
+            })
+            .catch((err) => res.status(err.statusCode || 400).json({ status: "error", message: err.message || "Login Failed" }));
         });
-
-        newUser.save(() => {
-          res.status(200).json({ status: "ok", message: 'User signed up' });
-        });
-      }
-    })
+      });
+    }
+    else {
+      user.expires_in = expires_in;
+      const token = jwt.encode(user, config.Server.secret);
+      res.status(200).json({ status: "ok", token: `JWT ${token}`, auth: 'Facebook' });
+    }
   }
   catch(err){
-    return res.status(err.statusCode || 400).json({status: "error",message: err.message});
+    return res.status(err.statusCode || 400).json({status: "error", message: err.message || "Login Failed" });
   }
 });
 
