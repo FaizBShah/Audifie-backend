@@ -257,7 +257,7 @@ router.route("/login").post(async (req, res) => {
     // const ip = req.headers["x-forwarded-for"];
 
     if (!email) throw new HTTPError(400, "Email not found");
-    email = email.toLowerCase();
+
     const re = /^(([^<>()[\]\\.,;:\s@\\"]+(\.[^<>()[\]\\.,;:\s@\\"]+)*)|(\\".+\\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     const validEmail = re.test(email);
     if (!validEmail) throw new HTTPError(400, "Email is invalid");
@@ -266,22 +266,23 @@ router.route("/login").post(async (req, res) => {
     if (password.length < 6 || password.length > 64) throw new HTTPError(400, "password is invalid");
 
     const user = await Users.findOne({ email });
+
     if (!user) throw new HTTPError(400, "Invalid user");
-    else {
-      user.comparePassword(req.body.password, (err, isMatch) => {
-        if (isMatch && !err) {
-          user.is_logged_in = true;
-          const token = jwt.encode(user, config.Server.secret);
-          user.save(() => {
-            res.status(200).json({ status: "logged in", token: `JWT ${token}` });
-          });
-        } else {
-          res.status(400).send({ status: "error", message: "Sign In failed" });
-        }
-      });
-    }
+
+    user.comparePassword(req.body.password, (err, isMatch) => {
+      if (isMatch && !err) {
+        user.is_logged_in = true;
+        user.expires_in = new Date(Date.now() + 60 * 60 * 24 * 1000).getTime();
+        const token = jwt.encode(user, config.Server.secret);
+        user.save(() => {
+          res.status(200).json({ status: "logged in", token: `JWT ${token}`, auth: 'Custom' });
+        });
+      } else {
+        res.status(400).send({ status: "error", message: "Sign In failed" });
+      }
+    });
   } catch (err) {
-    return res.status(err.statusCode || 400).json({ status: "error", message: err.message });
+    return res.status(err.statusCode || 400).json({ status: "error", message: err.message || "Login Failed" });
   }
 });
 
