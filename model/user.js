@@ -31,19 +31,6 @@ const userSchema = new Schema({
   }
 });
 
-// Hashing the password
-userSchema.pre("save", async function (next) {
-  //Logical error (Gets executed everytime irrespective of the password being save or not)
-  try {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(this.password, salt);
-    this.password = hashedPassword;
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Compares the hashed password.
 userSchema.methods.comparePassword = function (passw, cb) {
   bcrypt.compare(passw, this.password, (err, isMatch) => {
