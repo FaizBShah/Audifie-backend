@@ -7,6 +7,7 @@ const bcrypt = require("bcrypt");
 const Users = require("../model/user");
 const HTTPError = require("../errorMessage");
 const config = require("../config/default");
+const authenticate = require("../middlewares/authenticate");
 
 
 //Email sending configurations
@@ -68,8 +69,9 @@ const generateRandomNumber = (length) => {
  * @apiSuccess {Object} user logged in status.
  */
 
-router.route("/signup").post(async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
+    console.log(req.headers);
     if (!req.body) throw new HTTPError(400, "Post data invalid");
 
     let email = req.body.email;
@@ -436,6 +438,29 @@ router.route("/fbsignup").post(async (req,res) => {
   }
 });
 
+
+/**
+ * @api {post} /users/logout/ logout
+ * @apiName logout_request
+ *
+ * @apiParam {String} JWT Token
+ * @apiParam {String} Auth Type
+ *
+ * @apiSuccess {String} status response status string.
+ * @apiSuccess {Object} user logged out status.
+ */
+
+router.post("/logout", authenticate, async (req, res) => {
+  try{
+    const authType = req.body.auth;
+    if (!authType) throw new HTTPError(400, "Auth Type Missing");
+
+    res.status(200).json({ status: "ok", message: "Logged Out" });
+  }
+  catch(err){
+    return res.status(err.statusCode || 400).json({status: "error", message: err.message || "Logout Failed" });
+  }
+})
 
 module.exports = router;
 
