@@ -16,18 +16,19 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  email_confirmed: {
+  emailVerified: {
     type: Boolean,
     default: false,
   },
-  verification_code: String,
-  is_logged_in: {
-    type: Boolean,
-    default: false,
+  verificationCode: {
+    type: String
   },
   phone:{
     type: String,
-    required: true
+  },
+  date: {
+    type: Date,
+    default: Date.now
   }
 });
 
