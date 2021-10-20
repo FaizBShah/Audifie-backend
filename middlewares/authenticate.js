@@ -1,6 +1,5 @@
-const jwt = require("jwt-simple");
+const jwt = require("jsonwebtoken");
 const HTTPError = require("../errorMessage");
-const Users = require("../model/user");
 const config = require("../config/default");
 
 const authenticate = (req, res, next) => {
@@ -8,19 +7,17 @@ const authenticate = (req, res, next) => {
     if (!req.headers.authorization) throw new HTTPError(400, "User not logged in");
     if (!req.headers.authorization.startsWith("Bearer ")) throw new HTTPError(400, "Invalid Token");
 
-    const jwtToken = req.headers.authorization.slice(7);
-    const { email, expires_in } = jwt.decode(jwtToken, config.Server.secret);
+    const jwtToken = req.headers.authorization.split(" ")[1];
 
-    if (!email || !expires_in) throw new HTTPError(400, "Invalid Token");
+    const verified = jwt.verify(jwtToken, config.Server.secret);
 
-    const user = Users.findOne({ email });
-    if (!user) throw new HTTPError(400, "User doesn't exist");
+    if (!verified) throw new HTTPError(400, "Invalid Token");
 
-    if (expires_in >= Date.now()) throw new HTTPError(400, "Token expired");
+    req.user = verified;
 
     next();
   } catch(err) {
-    return res.status(err.statusCode || 400).json({ status: "error", message: err.message || "User not logged in" });
+    return res.status(err.statusCode || 400).json({ success: false, message: err.message || "User not logged in" });
   }
 }
 
