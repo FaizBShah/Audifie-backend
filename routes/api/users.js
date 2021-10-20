@@ -508,28 +508,18 @@ router.route("/fbsignup").post(async (req,res) => {
   }
 });
 
-
 /**
- * @api {post} /users/logout/ logout
- * @apiName logout_request
+ * @api {get} api/users/current Current User
+ * @apiName current_user
  *
  * @apiParam {String} JWT Token
- * @apiParam {String} Auth Type
  *
- * @apiSuccess {String} status response status string.
- * @apiSuccess {Object} user logged out status.
+ * @apiSuccess {String} success: response status string.
+ * @apiSuccess {Object} user: current user.
  */
 
-router.post("/logout", authenticate, async (req, res) => {
-  try{
-    const authType = req.body.auth;
-    if (!authType) throw new HTTPError(400, "Auth Type Missing");
-
-    res.status(200).json({ status: "ok", message: "Logged Out" });
-  }
-  catch(err){
-    return res.status(err.statusCode || 400).json({status: "error", message: err.message || "Logout Failed" });
-  }
+router.get("/current", authenticate, async (req, res) => {
+  res.status(200).json({ success: true, user: req.user });
 })
 
 module.exports = router;
