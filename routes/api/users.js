@@ -295,10 +295,11 @@ router.route("/login").post(async (req, res) => {
       jwt.sign(payload, config.Server.secret, { expiresIn: 60 * 60 * 24 }, (err, token) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
-        res.status(200).json({
-          success: true,
-          token: `Bearer ${token}`
-        });
+        res.status(200)
+          .cookie("token", token, { httpOnly: true })
+          .json({
+            success: true
+          });
       });
     });
   } catch (err) {
@@ -373,10 +374,11 @@ router.route("/login").post(async (req, res) => {
               jwt.sign(payload, config.Server.secret, { expiresIn: Math.floor(expires_in - Date.now()) / 1000 }, (err, token) => {
                 if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
-                res.status(200).json({
-                  success: true,
-                  token: `Bearer ${token}`
-                });
+                res.status(200)
+                  .cookie("token", token, { httpOnly: true })
+                  .json({
+                    success: true
+                  });
               });
             })
             .catch((err) => res.status(err.statusCode || 400).json({ success: false, message: err.message || "Sign In Failed" }));
@@ -395,10 +397,11 @@ router.route("/login").post(async (req, res) => {
       jwt.sign(payload, config.Server.secret, { expiresIn: Math.floor(expires_in - Date.now()) / 1000 }, (err, token) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
-        res.status(200).json({
-          success: true,
-          token: `Bearer ${token}`
-        });
+        res.status(200)
+          .cookie("token", token, { httpOnly: true })
+          .json({
+            success: true
+          });
       });
     }
   }
@@ -474,10 +477,11 @@ router.route("/fbsignup").post(async (req,res) => {
               jwt.sign(payload, config.Server.secret, { expiresIn: Math.floor(expires_in - Date.now()) / 1000 }, (err, token) => {
                 if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
-                res.status(200).json({
-                  success: true,
-                  token: `Bearer ${token}`
-                });
+                res.status(200)
+                  .cookie("token", token, { httpOnly: true })
+                  .json({
+                    success: true
+                  });
               });
             })
             .catch((err) => res.status(err.statusCode || 400).json({ success: false, message: err.message || "Login Failed" }));
@@ -496,10 +500,11 @@ router.route("/fbsignup").post(async (req,res) => {
       jwt.sign(payload, config.Server.secret, { expiresIn: Math.floor(expires_in - Date.now()) / 1000 }, (err, token) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
-        res.status(200).json({
-          success: true,
-          token: `Bearer ${token}`
-        });
+        res.status(200)
+          .cookie("token", token, { httpOnly: true })
+          .json({
+            success: true
+          });
       });
     }
   }
@@ -520,6 +525,19 @@ router.route("/fbsignup").post(async (req,res) => {
 
 router.get("/current", authenticate, async (req, res) => {
   res.status(200).json({ success: true, user: req.user });
+})
+
+
+/**
+ * @api {get} api/users/logout Logout Current User
+ * @apiName logout_user
+ *
+ * @apiSuccess {String} success: response status string.
+ */
+
+router.get("logout", authenticate, async (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ success: true });
 })
 
 module.exports = router;

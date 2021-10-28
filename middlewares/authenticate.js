@@ -4,10 +4,9 @@ const config = require("../config/default");
 
 const authenticate = (req, res, next) => {
   try {
-    if (!req.headers.authorization) throw new HTTPError(400, "User not logged in");
-    if (!req.headers.authorization.startsWith("Bearer ")) throw new HTTPError(400, "Invalid Token");
+    if (!req.cookies || !req.cookies.token) throw new HTTPError(400, "User not logged in");
 
-    const jwtToken = req.headers.authorization.split(" ")[1];
+    const jwtToken = req.cookies.token;
 
     const verified = jwt.verify(jwtToken, config.Server.secret);
 
@@ -17,6 +16,8 @@ const authenticate = (req, res, next) => {
 
     next();
   } catch(err) {
+    // Clear token cookie
+    res.clearCookie("token");
     return res.status(err.statusCode || 400).json({ success: false, message: err.message || "User not logged in" });
   }
 }
