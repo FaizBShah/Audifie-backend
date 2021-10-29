@@ -1,13 +1,15 @@
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
+const cors = require("cors");
 
-var indexRouter = require("./routes/api/index");
-var usersRouter = require("./routes/api/users");
+const indexRouter = require("./routes/api/index");
+const usersRouter = require("./routes/api/users");
 
-var app = express();
+const app = express();
 
+app.use(cors());
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

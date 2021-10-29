@@ -18,7 +18,10 @@ module.exports = {
     "app_secret": process.env.FB_APP_SECRET
   },
   "Server": {
-      "port": process.env.SERVER_PORT,
-      "secret" : process.env.SERVER_SECRET
+    "port": process.env.SERVER_PORT,
+    "secret" : process.env.SERVER_SECRET
+  },
+  "client": {
+    "domain": process.env.NODE_ENV === 'production' ? process.env.CLIENT_DOMAIN : "http://localhost:3000"
   }
 }

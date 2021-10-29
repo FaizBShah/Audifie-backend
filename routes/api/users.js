@@ -296,7 +296,7 @@ router.route("/login").post(async (req, res) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
         res.status(200)
-          .cookie("token", token, { httpOnly: true })
+          .cookie("token", token, { httpOnly: true, domain: config.client.domain })
           .json({
             success: true
           });
@@ -375,7 +375,7 @@ router.route("/login").post(async (req, res) => {
                 if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
                 res.status(200)
-                  .cookie("token", token, { httpOnly: true })
+                  .cookie("token", token, { httpOnly: true, domain: config.client.domain })
                   .json({
                     success: true
                   });
@@ -398,7 +398,7 @@ router.route("/login").post(async (req, res) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
         res.status(200)
-          .cookie("token", token, { httpOnly: true })
+          .cookie("token", token, { httpOnly: true, domain: config.client.domain })
           .json({
             success: true
           });
@@ -478,7 +478,7 @@ router.route("/fbsignup").post(async (req,res) => {
                 if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
                 res.status(200)
-                  .cookie("token", token, { httpOnly: true })
+                  .cookie("token", token, { httpOnly: true, domain: config.client.domain })
                   .json({
                     success: true
                   });
@@ -501,7 +501,7 @@ router.route("/fbsignup").post(async (req,res) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
         res.status(200)
-          .cookie("token", token, { httpOnly: true })
+          .cookie("token", token, { httpOnly: true, domain: config.client.domain })
           .json({
             success: true
           });
