@@ -22,6 +22,6 @@ module.exports = {
     "secret" : process.env.SERVER_SECRET
   },
   "client": {
-    "domain": process.env.NODE_ENV === 'production' ? process.env.CLIENT_DOMAIN : "http://localhost:3000"
+    "domain": process.env.CLIENT_DOMAIN
   }
 }

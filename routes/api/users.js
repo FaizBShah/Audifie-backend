@@ -295,8 +295,12 @@ router.route("/login").post(async (req, res) => {
       jwt.sign(payload, config.Server.secret, { expiresIn: 60 * 60 * 24 }, (err, token) => {
         if (err) return res.status(400).json({ success: false, message: "Sign In Failed" });
 
+        const cookieOpts = { httpOnly: true };
+
+        if (process.env.NODE_ENV === 'production') cookieOpts.domain = config.client.domain;
+
         res.status(200)
-          .cookie("token", token, { httpOnly: true, domain: config.client.domain })
+          .cookie("token", token, cookieOpts)
           .json({
             success: true
           });
@@ -529,13 +533,13 @@ router.get("/current", authenticate, async (req, res) => {
 
 
 /**
- * @api {get} api/users/logout Logout Current User
+ * @api {post} api/users/logout Logout Current User
  * @apiName logout_user
  *
  * @apiSuccess {String} success: response status string.
  */
 
-router.get("logout", authenticate, async (req, res) => {
+router.post("/logout", authenticate, async (req, res) => {
   res.clearCookie("token");
   res.status(200).json({ success: true });
 })
