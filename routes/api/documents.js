@@ -5,7 +5,7 @@ const multer = require("multer");
 const Documents = require("../../model/Document");
 const HTTPError = require("../../errorMessage");
 const authenticate = require("../../middlewares/authenticate");
-const { uploadFile } = require("../../utils/s3");
+const { uploadFile } = require("../../util/s3");
 
 const upload = multer({ dest: "uploads/" });
 
