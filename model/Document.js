@@ -19,16 +19,7 @@ const documentSchema = new Schema({
   imageURL: {
     type: String
   },
-  fileURL: {
-    type: String
-  },
-  audioURL: {
-    type: String
-  },
-  textURL: {
-    type: String
-  },
-  status: {
+  processing: {
     type: Boolean,
     default: false
   },
