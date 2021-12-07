@@ -18,8 +18,9 @@ const upload = multer({ dest: "uploads/" });
 
 router.post("/upload", authenticate, upload.single("document"), async (req, res) => {
   try {
-    if (!file) throw new HTTPError(400, "No file is uploaded");
     const file = req.file;
+    
+    if (!file) throw new HTTPError(400, "No file is uploaded");
 
     const newDocument = new Documents({
       user: req.user.id,
