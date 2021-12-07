@@ -10,6 +10,24 @@ const { uploadFile } = require("../../utils/s3");
 const upload = multer({ dest: "uploads/" });
 
 /**
+ * @api {get} api/documents Gets all documents of a particular user
+ * @apiName get_all_documents
+ *
+ * @apiSuccess {Object} documents: Documents of an user.
+ */
+
+router.get("/", authenticate, async (req, res) => {
+  try {
+    const query = await Documents.find({ user: req.user.id });
+    const documents = await query.sort({ date: 1 });
+
+    res.status(200).json(documents);
+  } catch(err) {
+    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to get documents" });
+  }
+})
+
+/**
  * @api {post} api/documents/upload Uploads a document
  * @apiName upload_document
  *
@@ -19,8 +37,8 @@ const upload = multer({ dest: "uploads/" });
 router.post("/upload", authenticate, upload.single("document"), async (req, res) => {
   try {
     const file = req.file;
-    
-    if (!file) throw new HTTPError(400, "No file is uploaded");
+
+    if (!file) throw new HTTPError(400, "No document is uploaded");
 
     const newDocument = new Documents({
       user: req.user.id,
@@ -48,9 +66,44 @@ router.post("/upload", authenticate, upload.single("document"), async (req, res)
           res.status(200).json({ success: true });
         });
       })
+      .catch((err) => {
+        res.status(err.statusCode || 400).json({ success: false, message: err.message || "Upload Failed" });
+      })
   } catch (err) {
     res.status(err.statusCode || 400).json({ success: false, message: err.message || "Upload Failed" });
   }
-});
+})
+
+/**
+ * @api {post} api/documents/edit/:id Edits a document
+ * @apiName edit_document
+ *
+ * @apiSuccess {Object} document: Updated document object.
+ */
+
+router.post("/edit/:id", async (req, res) => {
+  try {
+    if (!req.params.id) throw new HTTPError(400, "Invalid File");
+
+    const { title, isFavourite } = req.body;
+
+    const editFields = {};
+
+    if (title) editFields.title = title;
+    if (isFavourite) editFields.isFavourite = isFavourite;
+
+    const document = await Documents.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      { $set: editFields },
+      { new: true }
+    );
+
+    if (!document) throw new HTTPError(400, "Unable to perform task");
+
+    res.status(200).json(document);
+  } catch(err) {
+    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Unable to perform task" });
+  }
+})
 
 module.exports = router;
