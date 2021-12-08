@@ -15,19 +15,19 @@ const s3 = new AWS.S3({
   secretAccessKey
 });
 
-// uploads a file to s3
-function uploadFile(file, cb) {
+// Uploads a file to s3
+exports.uploadFile = (file, cb) => {
   const fileStream = fs.createfileStream(file.path);
 
   fileStream.on('open', () => {
-    const uploadParams = {
+    const uploadOpts = {
       Bucket: bucketName,
       Body: fileStream,
       Key: file.id,
       ContentType: file.mimetype,
     };
 
-    s3.upload(uploadParams, (err) => {
+    s3.upload(uploadOpts, (err) => {
       if (err) return cb(err);
   
       cb(null);
@@ -39,4 +39,22 @@ function uploadFile(file, cb) {
   });
 }
 
-exports.uploadFile = uploadFile;
+// Deletes the files from s3
+exports.deleteFile = (fileId, cb) => {
+  const deleteOpts = {
+    Bucket: bucketName,
+    Delete: {
+      Objects: [
+        { Key: fileId },
+        { Key: fileId + "_audio" },
+        { Key: fileId + "_text" }
+      ]
+    }
+  }
+
+  s3.deleteObjects(deleteOpts, (err) => {
+    if (err) return cb(err);
+  
+    cb(null);
+  });
+}
