@@ -5,7 +5,7 @@ const multer = require("multer");
 const Documents = require("../../model/Document");
 const HTTPError = require("../../errorMessage");
 const authenticate = require("../../middlewares/authenticate");
-const { uploadFile } = require("../../utils/s3");
+const { uploadFile, deleteFile } = require("../../utils/s3");
 
 const upload = multer({ dest: "uploads/" });
 
@@ -81,7 +81,7 @@ router.post("/upload", authenticate, upload.single("document"), async (req, res)
  * @apiSuccess {Object} document: Updated document object.
  */
 
-router.post("/edit/:id", async (req, res) => {
+router.post("/edit/:id", authenticate, async (req, res) => {
   try {
     if (!req.params.id) throw new HTTPError(400, "Invalid File");
 
@@ -103,6 +103,33 @@ router.post("/edit/:id", async (req, res) => {
     res.status(200).json(document);
   } catch(err) {
     res.status(err.statusCode || 400).json({ success: false, message: err.message || "Unable to perform task" });
+  }
+})
+
+/**
+ * @api {delete} api/documents/delete/:id Deletes a document
+ * @apiName delete_document
+ *
+ * @apiSuccess {String} success: Response success string.
+ */
+
+router.delete("/delete/:id", authenticate, async (req, res) => {
+  try {
+    if (!req.params.id) throw new HTTPError(400, "Invalid File");
+
+    const document = await Documents.findById(req.params.id);
+
+    if (!document) throw new HTTPError(400, "File not found");
+
+    deleteFile(req.params.id, (err) => {
+      if (err) return res.status(500).json({ success: false, message: "Failed to delete file" });
+
+      Documents.findByIdAndRemove(req.params.id)
+        .then(() => res.status(200).json({ success: true }))
+        .catch(() => res.status(500).json({ success: false, message: "Failed to delete file" }));
+    })
+  } catch (err) {
+    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to delete file" });
   }
 })
 
