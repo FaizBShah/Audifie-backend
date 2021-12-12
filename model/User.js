@@ -33,7 +33,7 @@ const userSchema = new Schema({
 });
 
 // Compares the hashed password.
-userSchema.methods.comparePassword = (passw, cb) => {
+userSchema.methods.comparePassword = function (passw, cb) {
   bcrypt.compare(passw, this.password, (err, isMatch) => {
     if (err) return cb(err);
     
