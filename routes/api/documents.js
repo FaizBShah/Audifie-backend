@@ -7,7 +7,17 @@ const HTTPError = require("../../errorMessage");
 const authenticate = require("../../middlewares/authenticate");
 const { uploadFile, deleteFile } = require("../../utils/s3");
 
-const upload = multer({ dest: "uploads/" });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    console.log(file);
+    cb(null, file.originalname);
+  }
+})
+
+const upload = multer({ storage });
 
 /**
  * @api {get} api/documents Gets all documents of a particular user
@@ -16,15 +26,12 @@ const upload = multer({ dest: "uploads/" });
  * @apiSuccess {Object} documents: Documents of an user.
  */
 
-router.get("/", authenticate, async (req, res) => {
-  try {
-    const query = await Documents.find({ user: req.user.id });
-    const documents = await query.sort({ date: 1 });
-
-    res.status(200).json(documents);
-  } catch(err) {
-    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to get documents" });
-  }
+router.get("/", authenticate, (req, res) => {
+  Documents.find({ user: req.user.id }, 'user title isFavourite processing date')
+    .populate('user', ['name'])
+    .sort({ date: -1 })
+    .then((documents) => res.status(200).json(documents))
+    .catch(() => res.status(400).json({ success: false, message: "Failed to get documents" }));
 })
 
 /**
@@ -62,7 +69,7 @@ router.post("/upload", authenticate, upload.single("document"), async (req, res)
     
           // Deleting the file after uploading to AWS
           fs.unlinkSync(req.file.path);
-    
+
           res.status(200).json({ success: true });
         });
       })
@@ -120,6 +127,8 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
     const document = await Documents.findById(req.params.id);
 
     if (!document) throw new HTTPError(400, "File not found");
+
+    if (!document.processing) throw new HTTPError(400, "File is currently getting processed");
 
     deleteFile(req.params.id, (err) => {
       if (err) return res.status(500).json({ success: false, message: "Failed to delete file" });
