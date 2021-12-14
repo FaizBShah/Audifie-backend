@@ -17,7 +17,7 @@ const s3 = new AWS.S3({
 
 // Uploads a file to s3
 exports.uploadFile = (file, cb) => {
-  const fileStream = fs.createfileStream(file.path);
+  const fileStream = fs.createReadStream(file.path);
 
   fileStream.on('open', () => {
     const uploadOpts = {
