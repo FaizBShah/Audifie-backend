@@ -21,7 +21,7 @@ const documentSchema = new Schema({
   },
   processing: {
     type: Boolean,
-    default: false
+    default: true
   },
   date: {
     type: Date,

@@ -47,7 +47,8 @@ exports.deleteFile = (fileId, cb) => {
       Objects: [
         { Key: fileId },
         { Key: fileId + "_audio" },
-        { Key: fileId + "_text" }
+        { Key: fileId + "_text" },
+        { Key: fileId + "_marks" }
       ]
     }
   }
