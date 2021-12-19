@@ -10,7 +10,6 @@ const { uploadFile, deleteFile } = require("../../utils/s3");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log(__dirname);
     cb(null, path.join(__dirname, "../../uploads"));
   },
   filename: function (req, file, cb) {
@@ -99,7 +98,7 @@ router.post("/edit/:id", authenticate, async (req, res) => {
     const editFields = {};
 
     if (title) editFields.title = title;
-    if (isFavourite) editFields.isFavourite = isFavourite;
+    if (isFavourite === true || isFavourite === false) editFields.isFavourite = isFavourite;
 
     const document = await Documents.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
