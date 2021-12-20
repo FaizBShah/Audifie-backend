@@ -129,7 +129,7 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
 
     if (!document) throw new HTTPError(400, "File not found");
 
-    if (!document.processing) throw new HTTPError(400, "File is currently getting processed");
+    if (document.processing) throw new HTTPError(400, "File is currently getting processed");
 
     deleteFile(req.params.id, (err) => {
       if (err) return res.status(500).json({ success: false, message: "Failed to delete file" });
