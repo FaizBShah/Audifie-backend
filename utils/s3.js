@@ -2,9 +2,20 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const config = require("../config/default");
 
-const { bucket_name, bucket_region, access_key, secret_key } = config.aws_s3;
+const { 
+  files_bucket_name,
+  audio_bucket_name,
+  text_bucket_name,
+  marks_bucket_name,
+  bucket_region,
+  access_key,
+  secret_key,
+} = config.aws_s3;
 
-const bucketName = bucket_name;
+const filesBucketName = files_bucket_name;
+const audioBucketName = audio_bucket_name;
+const textBucketName = text_bucket_name;
+const marksBucketName = marks_bucket_name;
 const region = bucket_region;
 const accessKeyId = access_key;
 const secretAccessKey = secret_key;
@@ -21,7 +32,7 @@ exports.uploadFile = (file, cb) => {
 
   fileStream.on('open', () => {
     const uploadOpts = {
-      Bucket: bucketName,
+      Bucket: filesBucketName,
       Body: fileStream,
       Key: file.id,
       ContentType: file.mimetype,
@@ -41,21 +52,16 @@ exports.uploadFile = (file, cb) => {
 
 // Deletes the files from s3
 exports.deleteFile = (fileId, cb) => {
-  const deleteOpts = {
-    Bucket: bucketName,
-    Delete: {
-      Objects: [
-        { Key: fileId },
-        { Key: fileId + "_audio" },
-        { Key: fileId + "_text" },
-        { Key: fileId + "_marks" }
-      ]
-    }
-  }
-
-  s3.deleteObjects(deleteOpts, (err) => {
-    if (err) return cb(err);
+  const deleteOpts = [
+    { Bucket: filesBucketName, Key: fileId },
+    { Bucket: audioBucketName, Key: fileId + '_audio' },
+    { Bucket: marksBucketName, Key: fileId + '_marks' },
+    { Bucket: textBucketName, Key: fileId + '_text' }
+  ]
   
-    cb(null);
-  });
+  const deletePromise = deleteOpts.map(opts => s3.deleteObject(opts).promise());
+
+  Promise.all(deletePromise)
+  .then(() => cb(null))
+  .catch((err) => cb(err));
 }

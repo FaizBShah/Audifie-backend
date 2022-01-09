@@ -10,7 +10,10 @@ module.exports = {
       "from_email": process.env.AWS_SES_FROM_EMAIL
   },
   "aws_s3": {
-    "bucket_name": process.env.AWS_BUCKET_NAME,
+    "files_bucket_name": process.env.AWS_FILES_BUCKET_NAME,
+    "audio_bucket_name": process.env.AWS_AUDIO_BUCKET_NAME,
+    "text_bucket_name": process.env.AWS_TEXT_BUCKET_NAME,
+    "marks_bucket_name": process.env.AWS_MARKS_BUCKET_NAME,
     "bucket_region": process.env.AWS_BUCKET_REGION,
     "access_key": process.env.AWS_ACCESS_KEY,
     "secret_key": process.env.AWS_SECRET_KEY
