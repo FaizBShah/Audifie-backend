@@ -55,7 +55,7 @@ exports.deleteFile = (fileId, cb) => {
   const deleteOpts = [
     { Bucket: filesBucketName, Key: fileId },
     { Bucket: audioBucketName, Key: fileId + '_audio' },
-    { Bucket: marksBucketName, Key: fileId + '_marks' },
+    { Bucket: marksBucketName, Key: fileId + '_speechmarks' },
     { Bucket: textBucketName, Key: fileId + '_text' }
   ]
   
@@ -64,4 +64,31 @@ exports.deleteFile = (fileId, cb) => {
   Promise.all(deletePromise)
   .then(() => cb(null))
   .catch((err) => cb(err));
+}
+
+// Get audio files from s3
+exports.getAudioFiles = async (fileId, cb) => {
+  try {
+    const numSecsInDay = 60 * 60 * 24;
+
+    const audioOpts = {
+      Bucket: audioBucketName,
+      Key: fileId + '_audio'
+    };
+
+    const marksOpts = {
+      Bucket: marksBucketName,
+      Key: fileId + '_speechmarks'
+    };
+
+    await s3.headObject(audioOpts).promise();
+    await s3.headObject(marksOpts).promise();
+
+    const audioUrl = await s3.getSignedUrlPromise('getObject', {...audioOpts, Expires: numSecsInDay});
+    const speechUrl = await s3.getSignedUrlPromise('getObject', {...marksOpts, Expires: numSecsInDay});
+
+    return cb(null, { audioUrl, speechUrl });
+  } catch (err) {
+    return cb(err);
+  }
 }
