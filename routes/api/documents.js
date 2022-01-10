@@ -6,7 +6,7 @@ const multer = require("multer");
 const Documents = require("../../model/Document");
 const HTTPError = require("../../errorMessage");
 const authenticate = require("../../middlewares/authenticate");
-const { uploadFile, deleteFile } = require("../../utils/s3");
+const { getAudioFiles, uploadFile, deleteFile } = require("../../utils/s3");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -140,6 +140,43 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
     })
   } catch (err) {
     res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to delete file" });
+  }
+})
+
+/**
+ * @api {get} api/documents/get-audio-details/:id Gets audio and marks file of a particular file
+ * @apiName get_audio_details
+ *
+ * @apiSuccess {Object} data: Audio details of a particular file.
+ */
+
+ router.get("/get-audio-details/:id", authenticate, async (req, res) => {
+  try {
+    if (!req.params.id) throw new HTTPError(400, "Invalid File");
+
+    const document = await Documents.findById(req.params.id);
+
+    if (!document) throw new HTTPError(400, "File not found");
+
+    getAudioFiles(req.params.id, (err, data) => {
+      if (err && err.code === 'NotFound') throw new HTTPError(404, "File is still getting processed");
+
+      if (err) throw new HTTPError(400, "Failed to fetch audio");
+
+      if (document.processing) {
+        Documents.findOneAndUpdate(
+          { _id: req.params.id, user: req.user.id },
+          { $set: { processing: false } },
+          { new: true }
+        )
+        .then(() => res.status(200).json(data))
+        .catch(() => res.status(500).json({ success: false, message: "Failed to fetch audio" }));
+      }
+
+      res.status(200).json(data);
+    })
+  } catch (err) {
+    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to fetch audio" });
   }
 })
 
