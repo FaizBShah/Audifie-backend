@@ -163,17 +163,15 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
 
       if (err) return res.status(500).json({ success: false, message: "Failed to fetch audio" });
 
-      if (document.processing) {
-        Documents.findOneAndUpdate(
-          { _id: req.params.id, user: req.user.id },
-          { $set: { processing: false } },
-          { new: true }
-        )
-        .then(() => res.status(200).json(data))
-        .catch(() => res.status(500).json({ success: false, message: "Failed to fetch audio" }));
-      }
+      if (!document.processing) return res.status(200).json(data);
 
-      res.status(200).json(data);
+      Documents.findOneAndUpdate(
+        { _id: req.params.id, user: req.user.id },
+        { $set: { processing: false } },
+        { new: true }
+      )
+      .then(() => res.status(200).json(data))
+      .catch(() => res.status(500).json({ success: false, message: "Failed to fetch audio" }));
     })
   } catch (err) {
     res.status(err.statusCode || 500).json({ success: false, message: err.message || "Failed to fetch audio" });
