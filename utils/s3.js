@@ -54,9 +54,9 @@ exports.uploadFile = (file, cb) => {
 exports.deleteFile = (fileId, cb) => {
   const deleteOpts = [
     { Bucket: filesBucketName, Key: fileId },
-    { Bucket: audioBucketName, Key: fileId + '_audio' },
-    { Bucket: marksBucketName, Key: fileId + '_speechmarks' },
-    { Bucket: textBucketName, Key: fileId + '_text' }
+    { Bucket: audioBucketName, Key: fileId + '_audio.mp3' },
+    { Bucket: marksBucketName, Key: fileId + '_speechmarks.marks' },
+    { Bucket: textBucketName, Key: fileId + '_text.txt' }
   ]
   
   const deletePromise = deleteOpts.map(opts => s3.deleteObject(opts).promise());
@@ -73,12 +73,12 @@ exports.getAudioFiles = async (fileId, cb) => {
 
     const audioOpts = {
       Bucket: audioBucketName,
-      Key: fileId + '_audio'
+      Key: fileId + '_audio.mp3'
     };
 
     const marksOpts = {
       Bucket: marksBucketName,
-      Key: fileId + '_speechmarks'
+      Key: fileId + '_speechmarks.marks'
     };
 
     await s3.headObject(audioOpts).promise();
