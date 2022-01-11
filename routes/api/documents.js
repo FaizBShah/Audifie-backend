@@ -32,7 +32,7 @@ router.get("/", authenticate, (req, res) => {
     .populate('user', ['name'])
     .sort({ date: -1 })
     .then((documents) => res.status(200).json(documents))
-    .catch(() => res.status(400).json({ success: false, message: "Failed to get documents" }));
+    .catch(() => res.status(500).json({ success: false, message: "Failed to get documents" }));
 })
 
 /**
@@ -75,10 +75,10 @@ router.post("/upload", authenticate, upload.single("document"), async (req, res)
         });
       })
       .catch((err) => {
-        res.status(err.statusCode || 400).json({ success: false, message: err.message || "Upload Failed" });
+        res.status(err.statusCode || 500).json({ success: false, message: err.message || "Upload Failed" });
       })
   } catch (err) {
-    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Upload Failed" });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message || "Upload Failed" });
   }
 })
 
@@ -110,7 +110,7 @@ router.post("/edit/:id", authenticate, async (req, res) => {
 
     res.status(200).json(document);
   } catch(err) {
-    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Unable to perform task" });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message || "Unable to perform task" });
   }
 })
 
@@ -139,7 +139,7 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
         .catch(() => res.status(500).json({ success: false, message: "Failed to delete file" }));
     })
   } catch (err) {
-    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to delete file" });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message || "Failed to delete file" });
   }
 })
 
@@ -159,9 +159,9 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
     if (!document) throw new HTTPError(400, "File not found");
 
     getAudioFiles(req.params.id, (err, data) => {
-      if (err && err.code === 'NotFound') throw new HTTPError(404, "File is still getting processed");
+      if (err && err.code === 'NotFound') return res.status(404).json({ success: false, message: "File is still getting processed" });
 
-      if (err) throw new HTTPError(400, "Failed to fetch audio");
+      if (err) return res.status(500).json({ success: false, message: "Failed to fetch audio" });
 
       if (document.processing) {
         Documents.findOneAndUpdate(
@@ -176,7 +176,7 @@ router.delete("/delete/:id", authenticate, async (req, res) => {
       res.status(200).json(data);
     })
   } catch (err) {
-    res.status(err.statusCode || 400).json({ success: false, message: err.message || "Failed to fetch audio" });
+    res.status(err.statusCode || 500).json({ success: false, message: err.message || "Failed to fetch audio" });
   }
 })
 
